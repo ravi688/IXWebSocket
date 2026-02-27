@@ -201,6 +201,12 @@ namespace ix
         _stop = true;
     }
 
+#ifdef _WIN32
+#   define INVALID_SOCKET_HANDLE INVALID_SOCKET // invalid socket handle
+#else
+#   define INVALID_SOCKET_HANDLE -1 // invalid file descriptor
+#endif
+
     void SocketServer::stop()
     {
         // Stop accepting connections, and close the 'accept' thread
@@ -231,7 +237,14 @@ namespace ix
         }
 
         _conditionVariable.notify_one();
-        Socket::closeSocket(_serverFd);
+
+        // Clone the server file descriptor only if is a valid descriptor
+        if(_serverFd != INVALID_SOCKET_HANDLE)
+        {
+            Socket::closeSocket(_serverFd);
+            // Makr the file descriptor as invalid
+            _serverFd = INVALID_SOCKET_HANDLE;
+        }
     }
 
     void SocketServer::setConnectionStateFactory(
